@@ -17,12 +17,13 @@ class FeeApi {
   constructor() { }
 
   defaultFee = isLiquid ? 0.1 : 1;
-  minimumIncrement = isLiquid ? 0.1 : 1;
+  minimumIncrement = 0.1;
+  decimals = 1; // should be -log10(minimumIncrement). This is needed to avoid floating point errors
 
   public getRecommendedFee(): RecommendedFees {
     const pBlocks = projectedBlocks.getMempoolBlocks();
     const mPool = mempool.getMempoolInfo();
-    const minimumFee = this.roundUpToNearest(mPool.mempoolminfee * 100000, this.minimumIncrement);
+    const minimumFee = this.roundUpToNearest(mPool.mempoolminfee * 100000, this.minimumIncrement, this.decimals);
     const defaultMinFee = Math.max(minimumFee, this.defaultFee);
 
     if (!pBlocks.length) {
@@ -71,11 +72,11 @@ class FeeApi {
       const multiplier = (pBlock.blockVSize - 500000) / 500000;
       return Math.max(Math.round(useFee * multiplier), this.defaultFee);
     }
-    return this.roundUpToNearest(useFee, this.minimumIncrement);
+    return this.roundUpToNearest(useFee, this.minimumIncrement, this.decimals);
   }
 
-  private roundUpToNearest(value: number, nearest: number): number {
-    return Math.ceil(value / nearest) * nearest;
+  private roundUpToNearest(value: number, nearest: number, decimals: number): number {
+    return Number((Math.ceil(value / nearest) * nearest).toFixed(decimals));
   }
 }
 
